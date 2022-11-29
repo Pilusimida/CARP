@@ -52,7 +52,7 @@ def print_demand(chromosome, demand):
             d = d + demand[chromosome[i]]
 
 
-def print_calculate_cost(chromosome, f, depot, cost, demand_edge):
+def calculate_cost(chromosome, f, depot, cost, demand_edge):
     sum = 0
     end = depot
     for i in chromosome:
@@ -245,6 +245,56 @@ def path_scanning(vehicles, depot, capacity, demand, demand_edge, cost, f, type)
             if len(free) == 0:
                 break
             next_edge_index = find_next(free, demand, demand_edge, end, depot, f, residual_capacity, capacity, cost, type)
+            if next_edge_index is None:
+                break
+            # 将next——edge的index加入染色体
+
+            chromosome.append(next_edge_index)
+            next_edge = demand_edge[next_edge_index]
+            # 从free里面去除被选出来的边和其逆边
+            free.remove(next_edge_index)
+            if next_edge_index < len(demand_edge)/2:
+                free.remove(next_edge_index + len(demand_edge)/2)
+            else:
+                free.remove(next_edge_index - len(demand_edge)/2)
+
+            routes[i].append(next_edge)  # 将next edge加入第i条routes
+            residual_capacity = residual_capacity - demand[next_edge_index]  # 更新剩余容量
+
+            end = next_edge[1]  # 更新末枝节点
+
+        chromosome.append(-1)
+
+    return routes, chromosome
+
+
+def random_path_scanning(vehicles, depot, capacity, demand, demand_edge, cost, f, sequence):
+    # chromosome stores the while information about the routes
+    chromosome = [-1]
+
+    # free is the copy of demand and will be popped once a demand edge has been chosen
+    free = []
+    for i in range(len(demand_edge)):
+        if demand[i] > 0:
+            free.append(i)
+
+    # routes are the original schedule
+    routes = []
+    for _ in range(vehicles):
+        routes.append([])
+
+    for i in range(vehicles):  # 对于每辆车进行路径规划
+        end = depot  # 回到初始节点
+
+        residual_capacity = capacity
+
+        if len(free) == 0:  # 如果free空了意味着所以任务都完成了，可以直接返回规划
+            break
+        next_edge = (0, 0)
+        while True:
+            if len(free) == 0:
+                break
+            next_edge_index = find_next(free, demand, demand_edge, end, depot, f, residual_capacity, capacity, cost, sequence[i])
             if next_edge_index is None:
                 break
             # 将next——edge的index加入染色体
